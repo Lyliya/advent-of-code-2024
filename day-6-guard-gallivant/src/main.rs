@@ -1,291 +1,91 @@
+use std::collections::HashSet;
 use std::fs;
 
-#[derive(Debug, PartialEq)]
-struct Point {
-    x: usize,
-    y: usize,
-}
+fn compute_path(grid: &Vec<Vec<u8>>) -> Result<HashSet<(usize, usize)>, ()> {
+    let mut visited_pos: HashSet<(usize, usize)> = HashSet::new();
+    let mut visited_move: HashSet<(usize, usize, i32)> = HashSet::new();
+    let y_len = grid.len();
+    let x_len = grid[0].len();
 
-fn index_to_point(index: usize, len: usize) -> Point {
-    Point {
-        x: index % (len + 1),
-        y: index / (len + 1),
-    }
-}
+    let (mut gy, mut gx) = (0..y_len)
+        .flat_map(|y| (0..x_len).map(move |x| (y, x)))
+        .find(|(y, x)| b"^>v<".contains(&grid[*y][*x]))
+        .expect("Unable to find guard position");
 
-fn add_pos_if_distincts(cases: &mut Vec<Point>, pos: &Point) {
-    if !cases.contains(pos) {
-        cases.push(Point { x: pos.x, y: pos.y });
-    }
-}
-
-fn add_move_if_distincts(moves: &mut Vec<Move>, new_move: &Move) {
-    if !moves.contains(new_move) {
-        moves.push(Move {
-            point: Point {
-                x: new_move.point.x,
-                y: new_move.point.y,
-            },
-            dir: new_move.dir,
-        });
-    }
-}
-
-fn get_char(lines: &Vec<&str>, x: usize, y: usize) -> char {
-    lines[y].chars().nth(x).unwrap()
-}
-
-fn step1(input: &String) -> Vec<Point> {
-    let lines: Vec<_> = input.trim().split("\n").collect();
-    let y_len = lines.len();
-
-    if y_len <= 0 {
-        panic!("Invalid input");
-    }
-    let x_len = lines[0].len();
-
-    let i = input
-        .chars()
-        .position(|c| "^>v<".contains(c))
-        .expect("Expect ^>v< in input");
-    let c = input.chars().nth(i).unwrap();
-
-    let mut guard_position = index_to_point(i, x_len);
-
-    let mut current_directions = if c == '^' {
-        0
-    } else if c == '>' {
-        1
-    } else if c == 'v' {
-        2
-    } else {
-        3
+    let mut current_direction = match grid[gy][gx] {
+        b'^' => 0,
+        b'>' => 1,
+        b'v' => 2,
+        _ => 3,
     };
 
-    let mut cases: Vec<Point> = vec![Point {
-        x: guard_position.x,
-        y: guard_position.y,
-    }];
+    visited_pos.insert((gy, gx));
+    visited_move.insert((gy, gx, current_direction));
 
-    while (guard_position.y > 0 && current_directions == 0)
-        || (guard_position.x < x_len - 1 && current_directions == 1)
-        || (guard_position.y < y_len - 1 && current_directions == 2)
-        || (guard_position.x > 0 && current_directions == 3)
+    while (gy > 0 && current_direction == 0)
+        || (gx < x_len - 1 && current_direction == 1)
+        || (gy < y_len - 1 && current_direction == 2)
+        || (gx > 0 && current_direction == 3)
     {
-        if current_directions == 0 {
-            let c = get_char(&lines, guard_position.x, guard_position.y - 1);
+        let (new_y, new_x) = match current_direction {
+            0 => (gy - 1, gx),
+            1 => (gy, gx + 1),
+            2 => (gy + 1, gx),
+            _ => (gy, gx - 1),
+        };
 
-            if c == '#' {
-                current_directions = (current_directions + 1) % 4;
-            } else {
-                guard_position.y -= 1;
-                add_pos_if_distincts(&mut cases, &guard_position)
+        if grid[new_y][new_x] == b'#' {
+            current_direction = (current_direction + 1) % 4;
+        } else {
+            if !visited_move.insert((new_y, new_x, current_direction)) {
+                return Err(());
             }
-        }
-        if current_directions == 1 {
-            let c = get_char(&lines, guard_position.x + 1, guard_position.y);
-
-            if c == '#' {
-                current_directions = (current_directions + 1) % 4;
-            } else {
-                guard_position.x += 1;
-                add_pos_if_distincts(&mut cases, &guard_position)
-            }
-        }
-        if current_directions == 2 {
-            let c = get_char(&lines, guard_position.x, guard_position.y + 1);
-
-            if c == '#' {
-                current_directions = (current_directions + 1) % 4;
-            } else {
-                guard_position.y += 1;
-                add_pos_if_distincts(&mut cases, &guard_position)
-            }
-        }
-        if current_directions == 3 {
-            let c = get_char(&lines, guard_position.x - 1, guard_position.y);
-
-            if c == '#' {
-                current_directions = (current_directions + 1) % 4;
-            } else {
-                guard_position.x -= 1;
-                add_pos_if_distincts(&mut cases, &guard_position)
-            }
+            (gy, gx) = (new_y, new_x);
+            visited_pos.insert((gy, gx));
         }
     }
 
-    return cases;
+    Ok(visited_pos)
 }
 
-#[derive(Debug, PartialEq)]
+fn step1(input: &str) {
+    let grid: Vec<Vec<u8>> = input.lines().map(|line| line.bytes().collect()).collect();
 
-struct Move {
-    point: Point,
-    dir: i32,
+    println!(
+        "Step 1 : {}",
+        compute_path(&grid).expect("Input is looping").len()
+    );
 }
 
-fn point_to_index(point: &Point, len: usize) -> usize {
-    (point.y * len) + point.x
-}
+fn step2(input: &str) {
+    let grid: Vec<Vec<u8>> = input.lines().map(|line| line.bytes().collect()).collect();
 
-fn check_if_loop(moves: &Vec<Move>, new_move: &Move) -> bool {
-    for m in moves {
-        if m.point.x == new_move.point.x && m.point.y == new_move.point.y && m.dir == new_move.dir {
-            return true;
-        }
-    }
-    return false;
-}
+    let (gy, gx) = (0..grid.len())
+        .flat_map(|y| (0..grid[0].len()).map(move |x| (y, x)))
+        .find(|(y, x)| b"^>v<".contains(&grid[*y][*x]))
+        .expect("Unable to find guard position");
 
-fn step2(path: &Vec<Point>, input: &String) {
-    let new_input = input.clone().trim().replace("\r", "");
-    let lines: Vec<_> = new_input.split("\n").collect();
-    let y_len = lines.len();
+    let path = compute_path(&grid).expect("Input is looping");
+    let mut loop_count = 0;
 
-    if y_len <= 0 {
-        panic!("Invalid input");
-    }
-    let x_len = lines[0].len();
-
-    let i = new_input
-        .chars()
-        .position(|c| "^>v<".contains(c))
-        .expect("Expect ^>v< in input");
-    let start_position = index_to_point(i, x_len);
-
-    let c = new_input.chars().nth(i).unwrap();
-
-    let start_direction = if c == '^' {
-        0
-    } else if c == '>' {
-        1
-    } else if c == 'v' {
-        2
-    } else {
-        3
-    };
-
-    let mut answer = 0;
-
-    for (i, case) in path.into_iter().enumerate() {
-        if i != 0 {
-            println!("Progress: {i}/{}", path.len());
-            let mut current_directions = start_direction;
-            let mut guard_position = Point {
-                x: start_position.x,
-                y: start_position.y,
+    for (y, x) in path.into_iter() {
+        if y != gy || x != gx {
+            let mut new_grid = grid.clone();
+            new_grid[y][x] = b'#';
+            match compute_path(&new_grid) {
+                Err(()) => {
+                    loop_count += 1;
+                }
+                _ => (),
             };
-            let new_obstacle_index = point_to_index(case, x_len + 1);
-            let mut new_input = input.clone().trim().replace("\r", "").to_string();
-            new_input.replace_range(new_obstacle_index..new_obstacle_index + 1, "#");
-            let map: Vec<_> = new_input.split("\n").collect();
-
-            let mut moves: Vec<Move> = vec![Move {
-                point: Point {
-                    x: guard_position.x,
-                    y: guard_position.y,
-                },
-                dir: current_directions,
-            }];
-
-            while (guard_position.y > 0 && current_directions == 0)
-                || (guard_position.x < x_len - 1 && current_directions == 1)
-                || (guard_position.y < y_len - 1 && current_directions == 2)
-                || (guard_position.x > 0 && current_directions == 3)
-            {
-                if current_directions == 0 {
-                    let c = get_char(&map, guard_position.x, guard_position.y - 1);
-
-                    if c == '#' {
-                        current_directions = (current_directions + 1) % 4;
-                    } else {
-                        guard_position.y -= 1;
-                        let new_move = Move {
-                            point: Point {
-                                x: guard_position.x,
-                                y: guard_position.y,
-                            },
-                            dir: current_directions,
-                        };
-                        if check_if_loop(&moves, &new_move) {
-                            answer += 1;
-                            break;
-                        }
-                        add_move_if_distincts(&mut moves, &new_move)
-                    }
-                }
-                if current_directions == 1 {
-                    let c = get_char(&map, guard_position.x + 1, guard_position.y);
-
-                    if c == '#' {
-                        current_directions = (current_directions + 1) % 4;
-                    } else {
-                        guard_position.x += 1;
-                        let new_move = Move {
-                            point: Point {
-                                x: guard_position.x,
-                                y: guard_position.y,
-                            },
-                            dir: current_directions,
-                        };
-                        if check_if_loop(&moves, &new_move) {
-                            answer += 1;
-                            break;
-                        }
-                        add_move_if_distincts(&mut moves, &new_move)
-                    }
-                }
-                if current_directions == 2 {
-                    let c = get_char(&map, guard_position.x, guard_position.y + 1);
-
-                    if c == '#' {
-                        current_directions = (current_directions + 1) % 4;
-                    } else {
-                        guard_position.y += 1;
-                        let new_move = Move {
-                            point: Point {
-                                x: guard_position.x,
-                                y: guard_position.y,
-                            },
-                            dir: current_directions,
-                        };
-                        if check_if_loop(&moves, &new_move) {
-                            answer += 1;
-                            break;
-                        }
-                        add_move_if_distincts(&mut moves, &new_move)
-                    }
-                }
-                if current_directions == 3 {
-                    let c = get_char(&map, guard_position.x - 1, guard_position.y);
-
-                    if c == '#' {
-                        current_directions = (current_directions + 1) % 4;
-                    } else {
-                        guard_position.x -= 1;
-                        let new_move = Move {
-                            point: Point {
-                                x: guard_position.x,
-                                y: guard_position.y,
-                            },
-                            dir: current_directions,
-                        };
-                        if check_if_loop(&moves, &new_move) {
-                            answer += 1;
-                            break;
-                        }
-                        add_move_if_distincts(&mut moves, &new_move)
-                    }
-                }
-            }
         }
     }
-    println!("Step 2 : {}", answer);
+
+    println!("Step 2 : {}", loop_count);
 }
 
 fn main() {
     let input = fs::read_to_string("./input.txt").expect("Unable to read input");
-    let cases = step1(&input.clone());
-    println!("Step 1 : {}", cases.len());
-    step2(&cases, &input.clone());
+    step1(&input);
+    step2(&input);
 }
