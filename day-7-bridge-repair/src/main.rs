@@ -2,9 +2,9 @@ use std::fs;
 
 fn generate_permutations(
     n: usize,
-    current: &mut String,
-    results: &mut Vec<String>,
-    ops: &Vec<char>,
+    current: &mut Vec<String>,
+    results: &mut Vec<Vec<String>>,
+    ops: &Vec<&str>,
 ) {
     if current.len() == n {
         results.push(current.clone());
@@ -12,7 +12,7 @@ fn generate_permutations(
     }
 
     for &ch in ops {
-        current.push(ch);
+        current.push(ch.to_string());
         generate_permutations(n, current, results, ops);
         current.pop(); // Backtrack
     }
@@ -33,18 +33,18 @@ fn step1(input: &str) {
             .collect();
 
         let mut ops_perm = Vec::new();
-        let mut current = String::new();
-        let ops = vec!['*', '+'];
+        let mut current = vec![];
+        let ops = vec!["*", "+"];
 
         generate_permutations(nums.len() - 1, &mut current, &mut ops_perm, &ops);
 
         for case in ops_perm {
             let mut t = nums[0];
 
-            for (index, op) in case.chars().enumerate() {
-                match op {
-                    '*' => t *= nums[index + 1],
-                    '+' => t += nums[index + 1],
+            for (index, op) in case.into_iter().enumerate() {
+                match op.as_str() {
+                    "*" => t *= nums[index + 1],
+                    "+" => t += nums[index + 1],
                     _ => panic!("no handled"),
                 }
             }
@@ -63,8 +63,7 @@ fn concat(a: usize, b: usize) -> usize {
 }
 
 fn step2(input: &str) {
-    let input = input.replace("||", "|");
-    let lines = input.lines();
+    let lines = input.trim().lines();
     let mut answer = 0;
 
     for line in lines {
@@ -78,19 +77,19 @@ fn step2(input: &str) {
             .collect();
 
         let mut ops_perm = Vec::new();
-        let mut current = String::new();
-        let ops = vec!['*', '+', '|'];
+        let mut current = vec![];
+        let ops = vec!["*", "+", "||"];
 
         generate_permutations(nums.len() - 1, &mut current, &mut ops_perm, &ops);
 
         for case in ops_perm {
             let mut t = nums[0];
 
-            for (index, op) in case.chars().enumerate() {
-                match op {
-                    '*' => t *= nums[index + 1],
-                    '+' => t += nums[index + 1],
-                    '|' => t = concat(t, nums[index + 1]),
+            for (index, op) in case.into_iter().enumerate() {
+                match op.as_str() {
+                    "*" => t *= nums[index + 1],
+                    "+" => t += nums[index + 1],
+                    "||" => t = concat(t, nums[index + 1]),
                     _ => panic!("no handled"),
                 }
             }
