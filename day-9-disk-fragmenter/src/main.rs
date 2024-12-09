@@ -17,29 +17,24 @@ fn generate_disk(input: &String) -> Vec<isize> {
 
 fn step1(input: &String) {
     let disk = generate_disk(input);
-    let mut checksum: Vec<usize> = vec![];
     let mut stop = disk.len() - 1;
-    let mut it = 0;
+    let mut it: usize = 0;
+    let mut answer: usize = 0;
 
     while it <= stop {
         if disk[it] == -1 {
             while disk[stop] == -1 {
                 stop -= 1;
             }
-            checksum.push(disk[stop].try_into().unwrap());
+            let value: usize = disk[stop].try_into().unwrap();
+            answer += it * value;
             stop -= 1;
         } else {
-            checksum.push(disk[it].try_into().unwrap());
+            let value: usize = disk[it].try_into().unwrap();
+            answer += it * value;
         }
         it += 1;
     }
-
-    let mut answer = 0;
-
-    for (i, n) in checksum.into_iter().enumerate() {
-        answer += i * n;
-    }
-
     println!("Step 1 : {}", answer);
 }
 
