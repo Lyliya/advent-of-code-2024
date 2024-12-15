@@ -11,16 +11,16 @@ fn find_robot(grid: &Vec<Vec<u8>>) -> Result<(usize, usize), ()> {
     Err(())
 }
 
-fn check_next(grid: &mut Vec<Vec<u8>>, pos: (usize, usize), dir: char) {
+fn check_next(grid: &mut Vec<Vec<u8>>, pos: (usize, usize), dir: char, robot: &mut (usize, usize)) {
     if grid[pos.0][pos.1] == b'#' {
         return;
     }
     if grid[pos.0][pos.1] == b'O' {
         match dir {
-            '<' => check_next(grid, (pos.0, pos.1 - 1), dir),
-            '^' => check_next(grid, (pos.0 - 1, pos.1), dir),
-            'v' => check_next(grid, (pos.0 + 1, pos.1), dir),
-            '>' => check_next(grid, (pos.0, pos.1 + 1), dir),
+            '<' => check_next(grid, (pos.0, pos.1 - 1), dir, robot),
+            '^' => check_next(grid, (pos.0 - 1, pos.1), dir, robot),
+            'v' => check_next(grid, (pos.0 + 1, pos.1), dir, robot),
+            '>' => check_next(grid, (pos.0, pos.1 + 1), dir, robot),
             _ => {}
         }
     }
@@ -28,24 +28,36 @@ fn check_next(grid: &mut Vec<Vec<u8>>, pos: (usize, usize), dir: char) {
         match dir {
             '<' => {
                 if grid[pos.0][pos.1 + 1] == b'O' || grid[pos.0][pos.1 + 1] == b'@' {
+                    if grid[pos.0][pos.1 + 1] == b'@' {
+                        *robot = (pos.0, pos.1);
+                    }
                     grid[pos.0][pos.1] = grid[pos.0][pos.1 + 1];
                     grid[pos.0][pos.1 + 1] = b'.';
                 }
             }
             '^' => {
                 if grid[pos.0 + 1][pos.1] == b'O' || grid[pos.0 + 1][pos.1] == b'@' {
+                    if grid[pos.0 + 1][pos.1] == b'@' {
+                        *robot = (pos.0, pos.1);
+                    }
                     grid[pos.0][pos.1] = grid[pos.0 + 1][pos.1];
                     grid[pos.0 + 1][pos.1] = b'.';
                 }
             }
             'v' => {
                 if grid[pos.0 - 1][pos.1] == b'O' || grid[pos.0 - 1][pos.1] == b'@' {
+                    if grid[pos.0 - 1][pos.1] == b'@' {
+                        *robot = (pos.0, pos.1);
+                    }
                     grid[pos.0][pos.1] = grid[pos.0 - 1][pos.1];
                     grid[pos.0 - 1][pos.1] = b'.';
                 }
             }
             '>' => {
                 if grid[pos.0][pos.1 - 1] == b'O' || grid[pos.0][pos.1 - 1] == b'@' {
+                    if grid[pos.0][pos.1 - 1] == b'@' {
+                        *robot = (pos.0, pos.1);
+                    }
                     grid[pos.0][pos.1] = grid[pos.0][pos.1 - 1];
                     grid[pos.0][pos.1 - 1] = b'.';
                 }
@@ -55,15 +67,15 @@ fn check_next(grid: &mut Vec<Vec<u8>>, pos: (usize, usize), dir: char) {
     }
 }
 
-fn display_map(grid: &Vec<Vec<u8>>) {
-    for line in grid {
-        for c in line {
-            print!("{}", *c as char);
-        }
-        println!();
-    }
-    println!();
-}
+// fn display_map(grid: &Vec<Vec<u8>>) {
+//     for line in grid {
+//         for c in line {
+//             print!("{}", *c as char);
+//         }
+//         println!();
+//     }
+//     println!();
+// }
 
 fn compute_score(grid: &Vec<Vec<u8>>) -> usize {
     let mut score = 0;
@@ -97,13 +109,12 @@ fn step1(input: &String) {
 
     for c in movements.chars() {
         match c {
-            '<' => check_next(&mut grid, (robot.0, robot.1 - 1), c),
-            '^' => check_next(&mut grid, (robot.0 - 1, robot.1), c),
-            'v' => check_next(&mut grid, (robot.0 + 1, robot.1), c),
-            '>' => check_next(&mut grid, (robot.0, robot.1 + 1), c),
+            '<' => check_next(&mut grid, (robot.0, robot.1 - 1), c, &mut robot),
+            '^' => check_next(&mut grid, (robot.0 - 1, robot.1), c, &mut robot),
+            'v' => check_next(&mut grid, (robot.0 + 1, robot.1), c, &mut robot),
+            '>' => check_next(&mut grid, (robot.0, robot.1 + 1), c, &mut robot),
             _ => {}
         }
-        robot = find_robot(&grid).expect("Expect robot");
         // display_map(&grid);
     }
 
