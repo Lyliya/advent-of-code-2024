@@ -57,7 +57,7 @@ fn dijkstra(
     grid: &Vec<Vec<char>>,
     start: (usize, usize),
     end: (usize, usize),
-) -> Option<(usize, Vec<(usize, usize, (isize, isize))>, usize)> {
+) -> Option<(usize, Vec<((usize, usize), (isize, isize))>, usize)> {
     let mut heap = BinaryHeap::from([State {
         cost: 0,
         y: start.0,
@@ -65,11 +65,13 @@ fn dijkstra(
         dir: Directions::RIGHT,
     }]);
     let mut distances = HashMap::new();
-    let mut came_from: HashMap<(usize, usize), Vec<(usize, usize, (isize, isize))>> =
-        HashMap::new();
+    let mut came_from: HashMap<
+        ((usize, usize), (isize, isize)),
+        Vec<((usize, usize), (isize, isize))>,
+    > = HashMap::new();
     let mut copy_grid = grid.clone();
 
-    distances.insert(start, 0);
+    distances.insert((start, Directions::RIGHT), 0);
 
     while let Some(State {
         cost,
@@ -78,20 +80,20 @@ fn dijkstra(
         dir: current_dir,
     }) = heap.pop()
     {
-        if let Some(&old) = distances.get(&(y, x)) {
+        if let Some(&old) = distances.get(&((y, x), current_dir)) {
             if cost > old {
                 continue;
             }
         }
 
         if (y, x) == end {
-            let mut stack = vec![(y, x, current_dir)];
+            let mut stack = vec![((y, x), current_dir)];
             let mut unique_pos = HashSet::new();
 
             while let Some(pos) = stack.pop() {
-                unique_pos.insert(pos);
-                copy_grid[pos.0][pos.1] = 'O';
-                if let Some(prev) = came_from.get(&(pos.0, pos.1)) {
+                unique_pos.insert((pos.0 .0, pos.0 .1));
+                copy_grid[pos.0 .0][pos.0 .1] = 'O';
+                if let Some(prev) = came_from.get(&pos) {
                     stack.extend(prev.iter().copied());
                 }
             }
@@ -124,14 +126,17 @@ fn dijkstra(
                 };
                 let new_position = (new_y as usize, new_x as usize);
 
-                match distances.get(&new_position) {
+                match distances.get(&(new_position, dir)) {
                     Some(&old) if new_cost > old => (),
                     Some(&old) if new_cost == old => {
-                        came_from.entry(new_position).or_default().push((y, x, dir));
+                        came_from
+                            .entry((new_position, dir))
+                            .or_default()
+                            .push(((y, x), current_dir));
                     }
                     _ => {
-                        came_from.insert(new_position, vec![(y, x, dir)]);
-                        distances.insert(new_position, new_cost);
+                        came_from.insert((new_position, dir), vec![((y, x), current_dir)]);
+                        distances.insert((new_position, dir), new_cost);
                         heap.push(State {
                             cost: new_cost,
                             y: new_position.0,
@@ -171,7 +176,7 @@ fn display_map(grid: &Vec<Vec<char>>) {
     println!();
 }
 
-fn step1(input: &String) {
+fn steps(input: &String) {
     let bindings = input.replace("\r\n", "\n");
     let grid: Vec<Vec<char>> = bindings
         .trim()
@@ -183,13 +188,8 @@ fn step1(input: &String) {
 
     match dijkstra(&grid, start, end) {
         Some((cost, path, unique_pos)) => {
-            // println!("Path : {:?}", path);
-            // display_map_with_path(
-            //     &grid,
-            //     &path.clone().into_iter().map(|f| (f.0, f.1)).collect(),
-            // );
-            println!("Shortest path cost: {}", cost);
-            println!("Unique pos: {}", unique_pos);
+            println!("Step 1: {}", cost);
+            println!("Step 2: {}", unique_pos);
         }
         None => println!("No path found."),
     }
@@ -197,5 +197,5 @@ fn step1(input: &String) {
 
 fn main() {
     let input = fs::read_to_string("./input.txt").expect("Unable to read input file");
-    step1(&input);
+    steps(&input);
 }
