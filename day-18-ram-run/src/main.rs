@@ -152,7 +152,6 @@ fn step1(input: &String) {
     let x_max = grid[0].len() - 1;
 
     for line in lines {
-        // println!("Line: {}", line);
         let s: Vec<&str> = line.split(",").collect();
         ram.push((s[1].parse::<usize>().expect("Expect number"), s[0].parse::<usize>().expect("Expect number")))
     }
@@ -161,9 +160,6 @@ fn step1(input: &String) {
         let f = ram[i];
         grid[f.0][f.1] = '#';
     }
-
-    grid[0][0] = 'S';
-    grid[y_max][x_max] = 'E';
 
     match dijkstra(&grid, (0,0), (y_max, x_max)) {
         Some((_cost, path)) => {
@@ -178,8 +174,40 @@ fn step1(input: &String) {
     
 }
 
+fn step2(input: &String) {
+    let lines: Vec<_> = input.trim().lines().collect();
+    let mut ram: Vec<(usize, usize)> = vec![];
+
+    let grid = construct_grid();
+    let y_max = grid.len() - 1;
+    let x_max = grid[0].len() - 1;
+
+    for line in lines {
+        let s: Vec<&str> = line.split(",").collect();
+        ram.push((s[1].parse::<usize>().expect("Expect number"), s[0].parse::<usize>().expect("Expect number")))
+    }
+
+    let mut i = (ram.len() - 1) / 2;
+    while i < ram.len() {
+        let mut copy_grid = grid.clone();
+        for c in 0..i {
+            let f = ram[c];
+            copy_grid[f.0][f.1] = '#';
+        }
+        match dijkstra(&copy_grid, (0,0), (y_max, x_max)) {
+            Some((_cost, _path)) => {
+                i += 1;
+            }
+            None => {
+                println!("Step 2 : {},{}", ram[i - 1].1, ram[i - 1].0);
+                return;
+            }
+        }
+    }
+}
+
 fn main() {
     let input = fs::read_to_string("./input.txt").expect("Unable to read input");
     step1(&input);
-    // step2(&input);
+    step2(&input);
 }
