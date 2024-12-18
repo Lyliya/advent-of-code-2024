@@ -174,6 +174,10 @@ fn step1(input: &String) {
     
 }
 
+fn find_mid(min: usize, max: usize) -> usize {
+    (min + max) / 2
+}
+
 fn step2(input: &String) {
     let lines: Vec<_> = input.trim().lines().collect();
     let mut ram: Vec<(usize, usize)> = vec![];
@@ -187,8 +191,11 @@ fn step2(input: &String) {
         ram.push((s[1].parse::<usize>().expect("Expect number"), s[0].parse::<usize>().expect("Expect number")))
     }
 
+    let mut min = 0;
+    let mut max = ram.len() - 1;
     let mut i = (ram.len() - 1) / 2;
-    while i < ram.len() {
+
+    while min != max - 1 {
         let mut copy_grid = grid.clone();
         for c in 0..i {
             let f = ram[c];
@@ -196,14 +203,19 @@ fn step2(input: &String) {
         }
         match dijkstra(&copy_grid, (0,0), (y_max, x_max)) {
             Some((_cost, _path)) => {
-                i += 1;
+                min = i;
+                i = find_mid(min, max);
             }
             None => {
-                println!("Step 2 : {},{}", ram[i - 1].1, ram[i - 1].0);
-                return;
+                max = i;
+                if min != max - 1 {
+                    i = find_mid(min, max)
+                }
             }
         }
     }
+    println!("Step 2 : {},{}", ram[i].1, ram[i].0);
+    return;
 }
 
 fn main() {
