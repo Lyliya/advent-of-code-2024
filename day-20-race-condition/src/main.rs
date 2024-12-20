@@ -63,60 +63,6 @@ fn parse_input(input: &String) -> (((usize, usize), (usize, usize)), Vec<Vec<cha
     (find_start_end(&grid), grid)
 }
 
-// fn parse_input(input: &String) -> (((usize, usize), (usize, usize)), Vec<(usize, usize)>) {
-//     let bindings = input.replace("\r\n", "\n");
-//     let mut path = vec![];
-//     let mut start = (0, 0);
-//     let mut end = (0, 0);
-
-//     for (y, line) in bindings.lines().enumerate() {
-//         for (x, c) in line.chars().enumerate() {
-//             match c {
-//                 '.' => path.push((y, x)),
-//                 'S' => start = (y, x),
-//                 'E' => end = (y, x),
-//                 _ => {}
-//             }
-//         }
-//     }
-
-//     path.push(start);
-//     path.push(end);
-
-//     ((start, end), path)
-//     // let grid: Vec<Vec<char>> = bindings
-//     //     .trim()
-//     //     .lines()
-//     //     .map(|line| line.chars().collect())
-//     //     .collect();
-
-//     // (find_start_end(&grid), grid)
-// }
-
-fn display_map_with_path(grid: &Vec<Vec<char>>, path: &Vec<(usize, usize)>) {
-    for (y, line) in grid.into_iter().enumerate() {
-        for (x, c) in line.into_iter().enumerate() {
-            if path.contains(&(y, x)) {
-                print!("O");
-            } else {
-                print!("{}", *c);
-            }
-        }
-        println!();
-    }
-    println!();
-}
-
-fn display_map(grid: &Vec<Vec<char>>) {
-    for line in grid {
-        for c in line {
-            print!("{}", *c);
-        }
-        println!();
-    }
-    println!();
-}
-
 fn dijkstra(
     grid: &Vec<Vec<char>>,
     start: (usize, usize),
@@ -196,14 +142,48 @@ fn manhattan_distance(a: (usize, usize), b: (usize, usize)) -> usize {
     (isize::abs(b.1 as isize - a.1 as isize) + isize::abs(b.0 as isize - a.0 as isize)) as usize
 }
 
+fn step2(input: &String) {
+    let ((start, end), grid) = parse_input(input);
+    let save_time = 100;
+
+    match dijkstra(&grid, start, end) {
+        Some((_cost, path)) => {
+            let mut current = 0;
+            let mut answer = 0;
+
+            // For each pos that can save me save_time
+            while current < path.len() - save_time {
+                // Start from the end
+                let mut jump_index = path.len() - 1;
+
+                // While I can save enough time
+                while jump_index >= current + save_time {
+                    // Check the distance use to skip
+                    let distance = manhattan_distance(path[current], path[jump_index]);
+                    // If less than 20 -> valid shortcut
+                    if distance <= 20 {
+                        let mut c = path.clone();
+                        let remove: Vec<_> = c.drain(current + 1..jump_index).collect();
+                        if remove.len() - distance + 1 >= save_time {
+                            answer += 1;
+                        }
+                    }
+                    jump_index -= 1;
+                }
+                current += 1;
+            }
+            println!("Total skip of {}: {}", save_time, answer);
+        }
+        None => {}
+    }
+}
+
 fn step1(input: &String) {
     let ((start, end), grid) = parse_input(input);
     let save_time = 100 + 2;
 
     match dijkstra(&grid, start, end) {
         Some((_cost, path)) => {
-            display_map_with_path(&grid, &path);
-
             let mut current = 0;
             let mut answer = 0;
             while current < path.len() - save_time {
@@ -218,7 +198,6 @@ fn step1(input: &String) {
 
                         let mut c = path.clone();
                         let remove: Vec<_> = c.drain(current + 1..jump_index).collect();
-                        // display_map_with_path(&grid, &c);
                         skipped.extend(remove);
                         answer += 1;
                     }
@@ -234,4 +213,5 @@ fn step1(input: &String) {
 fn main() {
     let input = fs::read_to_string("./input.txt").expect("Unable to read input file");
     step1(&input);
+    step2(&input);
 }
