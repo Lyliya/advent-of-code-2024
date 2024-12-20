@@ -1,4 +1,4 @@
-use std::collections::{BinaryHeap, HashMap, HashSet};
+use std::collections::{BinaryHeap, HashMap};
 use std::fs;
 
 #[derive(Eq, PartialEq)]
@@ -142,9 +142,11 @@ fn manhattan_distance(a: (usize, usize), b: (usize, usize)) -> usize {
     (isize::abs(b.1 as isize - a.1 as isize) + isize::abs(b.0 as isize - a.0 as isize)) as usize
 }
 
-fn step2(input: &String) {
+fn solve<F>(input: &String, save_time: usize, check: F) -> usize
+where
+    F: Fn(usize) -> bool,
+{
     let ((start, end), grid) = parse_input(input);
-    let save_time = 100;
 
     match dijkstra(&grid, start, end) {
         Some((_cost, path)) => {
@@ -161,7 +163,7 @@ fn step2(input: &String) {
                     // Check the distance use to skip
                     let distance = manhattan_distance(path[current], path[jump_index]);
                     // If less than 20 -> valid shortcut
-                    if distance <= 20 {
+                    if check(distance) {
                         let mut c = path.clone();
                         let remove: Vec<_> = c.drain(current + 1..jump_index).collect();
                         if remove.len() - distance + 1 >= save_time {
@@ -172,46 +174,18 @@ fn step2(input: &String) {
                 }
                 current += 1;
             }
-            println!("Total skip of {}: {}", save_time, answer);
+            return answer;
         }
-        None => {}
-    }
-}
-
-fn step1(input: &String) {
-    let ((start, end), grid) = parse_input(input);
-    let save_time = 100 + 2;
-
-    match dijkstra(&grid, start, end) {
-        Some((_cost, path)) => {
-            let mut current = 0;
-            let mut answer = 0;
-            while current < path.len() - save_time {
-                let mut skipped: HashSet<(usize, usize)> = HashSet::new();
-
-                for jump_index in current + save_time..path.len() {
-                    let distance = manhattan_distance(path[current], path[jump_index]);
-                    if distance == 2 {
-                        if skipped.contains(&path[jump_index]) {
-                            continue;
-                        }
-
-                        let mut c = path.clone();
-                        let remove: Vec<_> = c.drain(current + 1..jump_index).collect();
-                        skipped.extend(remove);
-                        answer += 1;
-                    }
-                }
-                current += 1;
-            }
-            println!("Total skip of {}: {}", save_time - 2, answer);
+        None => {
+            panic!("No path found !");
         }
-        None => {}
     }
 }
 
 fn main() {
     let input = fs::read_to_string("./input.txt").expect("Unable to read input file");
-    step1(&input);
-    step2(&input);
+    let step1 = solve(&input, 100, |d| d == 2);
+    println!("Step 1 : {}", step1);
+    let step2 = solve(&input, 100, |d| d <= 20);
+    println!("Step 2 : {}", step2);
 }
