@@ -164,9 +164,8 @@ where
                     let distance = manhattan_distance(path[current], path[jump_index]);
                     // If less than 20 -> valid shortcut
                     if check(distance) {
-                        let mut c = path.clone();
-                        let remove: Vec<_> = c.drain(current + 1..jump_index).collect();
-                        if remove.len() - distance + 1 >= save_time {
+                        let removed_len = jump_index - (current + 1);
+                        if removed_len - distance + 1 >= save_time {
                             answer += 1;
                         }
                     }
@@ -184,8 +183,12 @@ where
 
 fn main() {
     let input = fs::read_to_string("./input.txt").expect("Unable to read input file");
+    use std::time::Instant;
+    let timer = Instant::now();
     let step1 = solve(&input, 100, |d| d == 2);
-    println!("Step 1 : {}", step1);
+    let elapsed = timer.elapsed();
+    println!("Step 1 : {} in {:.2?}", step1, elapsed);
+    let elapsed = timer.elapsed();
     let step2 = solve(&input, 100, |d| d <= 20);
-    println!("Step 2 : {}", step2);
+    println!("Step 2 : {} in {:.2?}", step2, timer.elapsed() - elapsed);
 }
