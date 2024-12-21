@@ -152,20 +152,6 @@ fn dijkstra(
     None
 }
 
-fn display_map_with_path(grid: &Vec<Vec<char>>, path: &Vec<(usize, usize)>) {
-    for (y, line) in grid.into_iter().enumerate() {
-        for (x, c) in line.into_iter().enumerate() {
-            if path.contains(&(y, x)) {
-                print!("O");
-            } else {
-                print!("{}", *c);
-            }
-        }
-        println!();
-    }
-    println!();
-}
-
 fn display_map(grid: &Vec<Vec<char>>) {
     for line in grid {
         for c in line {
@@ -187,7 +173,7 @@ fn steps(input: &String) {
     let (start, end) = find_start_end(&grid);
 
     match dijkstra(&grid, start, end) {
-        Some((cost, path, unique_pos)) => {
+        Some((cost, _path, unique_pos)) => {
             println!("Step 1: {}", cost);
             println!("Step 2: {}", unique_pos);
         }
